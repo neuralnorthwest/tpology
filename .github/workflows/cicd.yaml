@@ -84,15 +84,18 @@ jobs:
   check-goreleaser:
     name: Check Goreleaser
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main'
     steps:
-      - name: Check Goreleaser
-        if: github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main'
+      - name: Install GoReleaser
         uses: goreleaser/goreleaser-action@v4
         with:
           version: latest
-          args: build --snapshot --clean
+          install-only: true
         env:
           GITHUB_TOKEN: ${{ github.token }}
+      - name: Check
+        run: |
+          goreleaser build --clean --snapshot
   check-loc:
     name: Check LOC
     runs-on: ubuntu-latest
