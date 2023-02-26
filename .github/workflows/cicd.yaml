@@ -81,6 +81,14 @@ jobs:
             echo "ERROR: Version ${{ steps.detect-version.outputs.version }} already exists"
             exit 1
           fi
+      - name: Check Goreleaser
+        if: github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main'
+        uses: goreleaser/goreleaser-action@v4
+        with:
+          version: latest
+          args: build
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
   check-loc:
     name: Check LOC
     runs-on: ubuntu-latest
