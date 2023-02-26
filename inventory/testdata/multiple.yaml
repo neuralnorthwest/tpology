@@ -1,0 +1,17 @@
+name: name
+description: description
+owner: owner
+resource: test
+---
+name: name2
+description: description2
+owner: owner2
+resource2: test2
+---
+name: name3
+description: description3
+owner: owner3
+resource3:
+  key: value
+  array:
+  - value1
