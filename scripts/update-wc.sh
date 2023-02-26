@@ -1,10 +1,12 @@
+#!/bin/bash
+
 # Copyright 2023 Scott M. Long
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#	http://www.apache.org/licenses/LICENSE-2.0
+# 	http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,18 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-/tpology
-.vscode
+# Count lines of Go code, convert to thousands (k), and update the README.md
+# badge.
 
-# Binaries for programs and plugins
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
+set -euo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-# Test binary, built with `go test -c`
-*.test
+WC=$(find . -name '*.go' -not -path './vendor/*' -not -path './.git/*' | xargs wc -l | tail -n 1 | awk '{print $1}')
+WCK=$(((WC + 500) / 1000))
 
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
+# Update README.md, looking for `code-<N>k-blue` and replacing it with
+# `code-${WCK}k-blue`.
+sed -i "s/code-[0-9]\+k-blue/code-${WCK}k-blue/" README.md

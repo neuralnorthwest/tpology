@@ -14,15 +14,9 @@
 
 package main
 
-import (
-	"fmt"
-	"os"
+const version = "0.0.1"
 
-	"github.com/neuralnorthwest/tpology/cmd"
-)
-
-func main() {
-	if err := cmd.Main(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-	}
+// Version returns the version.
+func Version() string {
+	return version
 }

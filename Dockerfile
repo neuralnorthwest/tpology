@@ -1,10 +1,12 @@
+#!/bin/bash
+
 # Copyright 2023 Scott M. Long
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#	http://www.apache.org/licenses/LICENSE-2.0
+# 	http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,18 +14,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-/tpology
-.vscode
+ARG DEV=0
 
-# Binaries for programs and plugins
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
+FROM golang:1.19 as builder
+WORKDIR /build
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go install .
 
-# Test binary, built with `go test -c`
-*.test
+FROM scratch as image-0
+COPY --from=builder /go/bin/tpology /tpology
+ENTRYPOINT ["/tpology"]
 
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
+FROM alpine:3.17.2 as image-1
+RUN apk add --no-cache ca-certificates
+COPY --from=builder /go/bin/tpology /tpology
+ENTRYPOINT ["/tpology"]
+
+FROM image-$DEV as image

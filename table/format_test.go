@@ -1,3 +1,17 @@
+// Copyright 2023 Scott M. Long
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package table
 
 import (
@@ -14,14 +28,14 @@ func Test_Table_Markdown(t *testing.T) {
 	table.InsertColumn("Column 1", AtEnd)
 	table.InsertColumn("Column 2", AtEnd)
 	table.InsertColumn("Column 3", AtEnd)
-	table.InsertRow([]interface{}{"Row 1A", "Row 1B", "Row 1C"}, AtEnd)
-	table.InsertRow([]interface{}{"Row 2A ", "Row 2B  ", "Row 2C"}, AtEnd)
-	table.InsertRow([]interface{}{"Row 3A", "Row 3B", "Row 3C   "}, AtEnd)
+	assert.NoError(t, table.InsertRow([]interface{}{"Row 1A", "Row 1B", "Row 1C"}, AtEnd))
+	assert.NoError(t, table.InsertRow([]interface{}{"Row 2A ", "Row 2B  ", "Row 2C"}, AtEnd))
+	assert.NoError(t, table.InsertRow([]interface{}{"Row 3A", "Row 3B", "Row 3C   "}, AtEnd))
 	tableData := &bytes.Buffer{}
 	formatter := MarkdownFormatter()
-	formatter.Format(tableData, table)
+	assert.NoError(t, formatter.Format(tableData, table))
 	assert.Equal(t, `| Column 1 | Column 2 | Column 3  |
-| -------- | -------- | --------- |
+|----------|----------|-----------|
 | Row 1A   | Row 1B   | Row 1C    |
 | Row 2A   | Row 2B   | Row 2C    |
 | Row 3A   | Row 3B   | Row 3C    |
@@ -35,12 +49,12 @@ func Test_Table_CSV(t *testing.T) {
 	table.InsertColumn("Column 1", AtEnd)
 	table.InsertColumn("Column 2", AtEnd)
 	table.InsertColumn("Column 3", AtEnd)
-	table.InsertRow([]interface{}{"Row 1A  ", "Row 1B", "Row 1C"}, AtEnd)
-	table.InsertRow([]interface{}{"Row 2A", "Row 2B ", "Row 2C"}, AtEnd)
-	table.InsertRow([]interface{}{"Row 3A", "Row 3B", "Row 3C"}, AtEnd)
+	assert.NoError(t, table.InsertRow([]interface{}{"Row 1A  ", "Row 1B", "Row 1C"}, AtEnd))
+	assert.NoError(t, table.InsertRow([]interface{}{"Row 2A", "Row 2B ", "Row 2C"}, AtEnd))
+	assert.NoError(t, table.InsertRow([]interface{}{"Row 3A", "Row 3B", "Row 3C"}, AtEnd))
 	tableData := &bytes.Buffer{}
 	formatter := CSVFormatter()
-	formatter.Format(tableData, table)
+	assert.NoError(t, formatter.Format(tableData, table))
 	assert.Equal(t, `Column 1,Column 2,Column 3
 Row 1A  ,Row 1B,Row 1C
 Row 2A,Row 2B ,Row 2C
@@ -55,12 +69,12 @@ func Test_Table_Markdown_NoHeader(t *testing.T) {
 	table.InsertColumn("Column 1", AtEnd)
 	table.InsertColumn("Column 2", AtEnd)
 	table.InsertColumn("Column 3", AtEnd)
-	table.InsertRow([]interface{}{"Row 1A  ", "Row 1B  ", "Row 1C  "}, AtEnd)
-	table.InsertRow([]interface{}{"Row 2A  ", "Row 2B  ", "Row 2C  "}, AtEnd)
-	table.InsertRow([]interface{}{"Row 3A  ", "Row 3B  ", "Row 3C  "}, AtEnd)
+	assert.NoError(t, table.InsertRow([]interface{}{"Row 1A  ", "Row 1B  ", "Row 1C  "}, AtEnd))
+	assert.NoError(t, table.InsertRow([]interface{}{"Row 2A  ", "Row 2B  ", "Row 2C  "}, AtEnd))
+	assert.NoError(t, table.InsertRow([]interface{}{"Row 3A  ", "Row 3B  ", "Row 3C  "}, AtEnd))
 	tableData := &bytes.Buffer{}
 	formatter := MarkdownFormatter(NoHeader)
-	formatter.Format(tableData, table)
+	assert.NoError(t, formatter.Format(tableData, table))
 	assert.Equal(t, `| Row 1A   | Row 1B   | Row 1C   |
 | Row 2A   | Row 2B   | Row 2C   |
 | Row 3A   | Row 3B   | Row 3C   |
@@ -74,12 +88,12 @@ func Test_Table_CSV_NoHeader(t *testing.T) {
 	table.InsertColumn("Column 1", AtEnd)
 	table.InsertColumn("Column 2", AtEnd)
 	table.InsertColumn("Column 3", AtEnd)
-	table.InsertRow([]interface{}{"Row 1A", "Row 1B", "Row 1C"}, AtEnd)
-	table.InsertRow([]interface{}{"Row 2A", "Row 2B", "Row 2C"}, AtEnd)
-	table.InsertRow([]interface{}{"Row 3A", "Row 3B", "Row 3C"}, AtEnd)
+	assert.NoError(t, table.InsertRow([]interface{}{"Row 1A", "Row 1B", "Row 1C"}, AtEnd))
+	assert.NoError(t, table.InsertRow([]interface{}{"Row 2A", "Row 2B", "Row 2C"}, AtEnd))
+	assert.NoError(t, table.InsertRow([]interface{}{"Row 3A", "Row 3B", "Row 3C"}, AtEnd))
 	tableData := &bytes.Buffer{}
 	formatter := CSVFormatter(NoHeader)
-	formatter.Format(tableData, table)
+	assert.NoError(t, formatter.Format(tableData, table))
 	assert.Equal(t, `Row 1A,Row 1B,Row 1C
 Row 2A,Row 2B,Row 2C
 Row 3A,Row 3B,Row 3C
@@ -93,14 +107,14 @@ func Test_Table_Markdown_NoFooter(t *testing.T) {
 	table.InsertColumn("Column 1", AtEnd)
 	table.InsertColumn("Column 2", AtEnd)
 	table.InsertColumn("Column 3", AtEnd)
-	table.InsertRow([]interface{}{"Row 1A", "Row 1B", "Row 1C"}, AtEnd)
-	table.InsertRow([]interface{}{"Row 2A", "Row 2B", "Row 2C"}, AtEnd)
-	table.InsertRow([]interface{}{"Row 3A", "Row 3B", "Row 3C"}, AtEnd)
+	assert.NoError(t, table.InsertRow([]interface{}{"Row 1A", "Row 1B", "Row 1C"}, AtEnd))
+	assert.NoError(t, table.InsertRow([]interface{}{"Row 2A", "Row 2B", "Row 2C"}, AtEnd))
+	assert.NoError(t, table.InsertRow([]interface{}{"Row 3A", "Row 3B", "Row 3C"}, AtEnd))
 	tableData := &bytes.Buffer{}
 	formatter := MarkdownFormatter(NoFooter)
-	formatter.Format(tableData, table)
+	assert.NoError(t, formatter.Format(tableData, table))
 	assert.Equal(t, `| Column 1 | Column 2 | Column 3 |
-| -------- | -------- | -------- |
+|----------|----------|----------|
 | Row 1A   | Row 1B   | Row 1C   |
 | Row 2A   | Row 2B   | Row 2C   |
 | Row 3A   | Row 3B   | Row 3C   |
@@ -131,9 +145,9 @@ func Test_Format_Panic(t *testing.T) {
 	table.InsertColumn("Column 1", AtEnd)
 	table.InsertColumn("Column 2", AtEnd)
 	table.InsertColumn("Column 3", AtEnd)
-	table.InsertRow([]interface{}{"Row 1A", "Row 1B", "Row 1C"}, AtEnd)
-	table.InsertRow([]interface{}{"Row 2A", "Row 2B", "Row 2C"}, AtEnd)
-	table.InsertRow([]interface{}{"Row 3A", "Row 3B", "Row 3C"}, AtEnd)
+	assert.NoError(t, table.InsertRow([]interface{}{"Row 1A", "Row 1B", "Row 1C"}, AtEnd))
+	assert.NoError(t, table.InsertRow([]interface{}{"Row 2A", "Row 2B", "Row 2C"}, AtEnd))
+	assert.NoError(t, table.InsertRow([]interface{}{"Row 3A", "Row 3B", "Row 3C"}, AtEnd))
 	formatter := MarkdownFormatter()
 	err := formatter.Format(&errWriter{}, table)
 	assert.Error(t, err)
