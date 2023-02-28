@@ -19,7 +19,7 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-NO_LIC_FILES=$(grep --exclude-dir=.git --exclude-dir=venv --exclude-dir=gen --exclude-dir=mock\* --exclude-dir=docs -HLr 'Licensed under the Apache License' . | sort)
+NO_LIC_FILES=$(grep --exclude-dir=.git --exclude-dir=venv --exclude-dir=gen --exclude-dir=mock\* --exclude-dir=docs --exclude-dir=dist --exclude-dir=.vscode -HLr 'Licensed under the Apache License' . | sort)
 IGNORE_FILES=$(cat .licenseignore | sort)
 REPORT_FILES=""
 while read -r NO_LIC_FILE; do
