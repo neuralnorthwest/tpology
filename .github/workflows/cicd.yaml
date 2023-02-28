@@ -81,21 +81,6 @@ jobs:
             echo "ERROR: Version ${{ steps.detect-version.outputs.version }} already exists"
             exit 1
           fi
-  check-goreleaser:
-    name: Check Goreleaser
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main'
-    steps:
-      - name: Install GoReleaser
-        uses: goreleaser/goreleaser-action@v4
-        with:
-          version: latest
-          install-only: true
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-      - name: Check
-        run: |
-          goreleaser build --clean --snapshot
   check-loc:
     name: Check LOC
     runs-on: ubuntu-latest
@@ -113,7 +98,6 @@ jobs:
       - lint
       - check-license
       - check-loc
-      - check-goreleaser
       - detect-version
     runs-on: ubuntu-latest
     steps:
