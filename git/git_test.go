@@ -326,3 +326,285 @@ func Test_GitRepository_LockerPID(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, os.Getpid(), pid)
 }
+
+// Test_GitRepository_LockFile_Write_Failed tests the LockFile function when
+// writing the lock file fails.
+func Test_GitRepository_LockFile_Write_Failed(t *testing.T) {
+	t.Parallel()
+	mockCtrl := gomock.NewController(t)
+	mockfs := mock_git.NewMockfs(mockCtrl)
+	mockfs.EXPECT().Stat(gomock.Any()).DoAndReturn(os.Stat)
+	mockfs.EXPECT().MkdirAll(gomock.Any(), gomock.Any()).DoAndReturn(os.MkdirAll)
+	mockfs.EXPECT().OpenFile(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil) // return a nil file
+	c, _, cleanup := setupCache(t)
+	defer cleanup()
+	c.fs = mockfs
+	repo, cleanup := newLocalTestRepo(t, c)
+	defer cleanup()
+	assert.NoError(t, repo.Clone())
+	_, err := repo.Lock()
+	assert.Error(t, err)
+}
+
+// Test_GitRepository_Hooks_Clone tests the Hooks function when cloning.
+func Test_GitRepository_Hooks_Clone(t *testing.T) {
+	t.Parallel()
+	c, _, cleanup := setupCache(t)
+	defer cleanup()
+	repo, cleanup := newLocalTestRepo(t, c)
+	defer cleanup()
+	preHookCalled := new(int)
+	postHookCalled := new(int)
+	n := 0
+	repo.PreHook = func(*exec.Cmd) error {
+		*preHookCalled = n
+		n++
+		return nil
+	}
+	repo.PostHook = func(*exec.Cmd, error) error {
+		*postHookCalled = n
+		n++
+		return nil
+	}
+
+	assert.NoError(t, repo.Clone())
+	assert.Equal(t, 0, *preHookCalled)
+	assert.Equal(t, 1, *postHookCalled)
+}
+
+// Test_GitRepository_Hooks_Clone_PreFail tests the Hooks function when cloning
+// and the pre hook fails.
+func Test_GitRepository_Hooks_Clone_PreFail(t *testing.T) {
+	t.Parallel()
+	c, _, cleanup := setupCache(t)
+	defer cleanup()
+	repo, cleanup := newLocalTestRepo(t, c)
+	defer cleanup()
+	preHookCalled := new(int)
+	postHookCalled := new(int)
+	n := 0
+	repo.PreHook = func(*exec.Cmd) error {
+		*preHookCalled = n
+		n++
+		return errors.New("test")
+	}
+	repo.PostHook = func(*exec.Cmd, error) error {
+		*postHookCalled = n
+		n++
+		return nil
+	}
+
+	assert.ErrorContains(t, repo.Clone(), "test")
+	assert.Equal(t, 0, *preHookCalled)
+	assert.Equal(t, 0, *postHookCalled)
+}
+
+// Test_GitRepository_Hooks_Clone_PostFail tests the Hooks function when cloning
+// and the post hook fails.
+func Test_GitRepository_Hooks_Clone_PostFail(t *testing.T) {
+	t.Parallel()
+	c, _, cleanup := setupCache(t)
+	defer cleanup()
+	repo, cleanup := newLocalTestRepo(t, c)
+	defer cleanup()
+	preHookCalled := new(int)
+	postHookCalled := new(int)
+	n := 0
+	repo.PreHook = func(*exec.Cmd) error {
+		*preHookCalled = n
+		n++
+		return nil
+	}
+	repo.PostHook = func(*exec.Cmd, error) error {
+		*postHookCalled = n
+		n++
+		return errors.New("test")
+	}
+
+	assert.ErrorContains(t, repo.Clone(), "test")
+	assert.Equal(t, 0, *preHookCalled)
+	assert.Equal(t, 1, *postHookCalled)
+}
+
+// Test_GitRepository_Hooks_Exec tests the Hooks function when executing a
+// command.
+func Test_GitRepository_Hooks_Exec(t *testing.T) {
+	t.Parallel()
+	c, _, cleanup := setupCache(t)
+	defer cleanup()
+	repo, cleanup := newLocalTestRepo(t, c)
+	defer cleanup()
+	preHookCalled := new(int)
+	postHookCalled := new(int)
+	n := 0
+	repo.PreHook = func(*exec.Cmd) error {
+		*preHookCalled = n
+		n++
+		return nil
+	}
+	repo.PostHook = func(*exec.Cmd, error) error {
+		*postHookCalled = n
+		n++
+		return nil
+	}
+
+	assert.NoError(t, repo.Clone())
+	assert.NoError(t, repo.Exec("status"))
+	assert.Equal(t, 2, *preHookCalled)
+	assert.Equal(t, 3, *postHookCalled)
+}
+
+// Test_GitRepository_Hooks_Exec_PreFail tests the Hooks function when executing
+// a command and the pre hook fails.
+func Test_GitRepository_Hooks_Exec_PreFail(t *testing.T) {
+	t.Parallel()
+	c, _, cleanup := setupCache(t)
+	defer cleanup()
+	repo, cleanup := newLocalTestRepo(t, c)
+	defer cleanup()
+	preHookCalled := new(int)
+	postHookCalled := new(int)
+	n := 0
+	repo.PreHook = func(*exec.Cmd) error {
+		*preHookCalled = n
+		n++
+		if n > 1 {
+			return errors.New("test")
+		}
+		return nil
+	}
+	repo.PostHook = func(*exec.Cmd, error) error {
+		*postHookCalled = n
+		n++
+		return nil
+	}
+
+	assert.NoError(t, repo.Clone())
+	assert.ErrorContains(t, repo.Exec("status"), "test")
+	assert.Equal(t, 2, *preHookCalled)
+	assert.Equal(t, 1, *postHookCalled)
+}
+
+// Test_GitRepository_Hooks_Exec_PostFail tests the Hooks function when executing
+// a command and the post hook fails.
+func Test_GitRepository_Hooks_Exec_PostFail(t *testing.T) {
+	t.Parallel()
+	c, _, cleanup := setupCache(t)
+	defer cleanup()
+	repo, cleanup := newLocalTestRepo(t, c)
+	defer cleanup()
+	preHookCalled := new(int)
+	postHookCalled := new(int)
+	n := 0
+	repo.PreHook = func(*exec.Cmd) error {
+		*preHookCalled = n
+		n++
+		return nil
+	}
+	repo.PostHook = func(*exec.Cmd, error) error {
+		*postHookCalled = n
+		n++
+		if n > 2 {
+			return errors.New("test")
+		}
+		return nil
+	}
+
+	assert.NoError(t, repo.Clone())
+	assert.ErrorContains(t, repo.Exec("status"), "test")
+	assert.Equal(t, 2, *preHookCalled)
+	assert.Equal(t, 3, *postHookCalled)
+}
+
+// Test_GitRepository_Hooks_ExecOutput tests the Hooks function when executing a
+// command and capturing the output.
+func Test_GitRepository_Hooks_ExecOutput(t *testing.T) {
+	t.Parallel()
+	c, _, cleanup := setupCache(t)
+	defer cleanup()
+	repo, cleanup := newLocalTestRepo(t, c)
+	defer cleanup()
+	preHookCalled := new(int)
+	postHookCalled := new(int)
+	n := 0
+	repo.PreHook = func(*exec.Cmd) error {
+		*preHookCalled = n
+		n++
+		return nil
+	}
+	repo.PostHook = func(*exec.Cmd, error) error {
+		*postHookCalled = n
+		n++
+		return nil
+	}
+
+	assert.NoError(t, repo.Clone())
+	_, err := repo.ExecOutput("status")
+	assert.NoError(t, err)
+	assert.Equal(t, 2, *preHookCalled)
+	assert.Equal(t, 3, *postHookCalled)
+}
+
+// Test_GitRepository_Hooks_ExecOutput_PreFail tests the Hooks function when
+// executing a command and capturing the output and the pre hook fails.
+func Test_GitRepository_Hooks_ExecOutput_PreFail(t *testing.T) {
+	t.Parallel()
+	c, _, cleanup := setupCache(t)
+	defer cleanup()
+	repo, cleanup := newLocalTestRepo(t, c)
+	defer cleanup()
+	preHookCalled := new(int)
+	postHookCalled := new(int)
+	n := 0
+	repo.PreHook = func(*exec.Cmd) error {
+		*preHookCalled = n
+		n++
+		if n > 1 {
+			return errors.New("test")
+		}
+		return nil
+	}
+	repo.PostHook = func(*exec.Cmd, error) error {
+		*postHookCalled = n
+		n++
+		return nil
+	}
+
+	assert.NoError(t, repo.Clone())
+	_, err := repo.ExecOutput("status")
+	assert.ErrorContains(t, err, "test")
+	assert.Equal(t, 2, *preHookCalled)
+	assert.Equal(t, 1, *postHookCalled)
+}
+
+// Test_GitRepository_Hooks_ExecOutput_PostFail tests the Hooks function when
+// executing a command and capturing the output and the post hook fails.
+func Test_GitRepository_Hooks_ExecOutput_PostFail(t *testing.T) {
+	t.Parallel()
+	c, _, cleanup := setupCache(t)
+	defer cleanup()
+	repo, cleanup := newLocalTestRepo(t, c)
+	defer cleanup()
+	preHookCalled := new(int)
+	postHookCalled := new(int)
+	n := 0
+	repo.PreHook = func(*exec.Cmd) error {
+		*preHookCalled = n
+		n++
+		return nil
+	}
+	repo.PostHook = func(*exec.Cmd, error) error {
+		*postHookCalled = n
+		n++
+		if n > 2 {
+			return errors.New("test")
+		}
+		return nil
+	}
+
+	assert.NoError(t, repo.Clone())
+	_, err := repo.ExecOutput("status")
+	assert.ErrorContains(t, err, "test")
+	assert.Equal(t, 2, *preHookCalled)
+	assert.Equal(t, 3, *postHookCalled)
+}

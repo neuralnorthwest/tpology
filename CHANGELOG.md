@@ -1,3 +1,10 @@
+## v0.0.4
+
+### Added
+
+* Added `PreHook` and `PostHook` to `git.Repository` to allow interception of
+  git operations.
+
 ## v0.0.3
 
 ### Fixed

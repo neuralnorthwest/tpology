@@ -41,6 +41,10 @@ type Repository struct {
 	MainBranch string
 	// Dir is the path to the directory where the Git repository is cloned.
 	Dir string
+	// PreHook is a function that is called before a Git command is executed.
+	PreHook func(*exec.Cmd) error
+	// PostHook is a function that is called after a Git command is executed.
+	PostHook func(*exec.Cmd, error) error
 	// fs is the filesystem interface.
 	fs
 }
@@ -102,10 +106,24 @@ func (r *Repository) Clone(args ...string) error {
 		if err := r.fs.MkdirAll(filepath.Dir(r.Dir), 0755); err != nil {
 			return err
 		}
+		var cmd *exec.Cmd
 		if r.MainBranch == "" {
-			return exec.Command("git", append(append([]string{"clone"}, args...), r.URL, r.Dir)...).Run()
+			cmd = exec.Command("git", append(append([]string{"clone"}, args...), r.URL, r.Dir)...)
+		} else {
+			cmd = exec.Command("git", append(append([]string{"clone", "-b", r.MainBranch}, args...), r.URL, r.Dir)...)
 		}
-		return exec.Command("git", append(append([]string{"clone", "-b", r.MainBranch}, args...), r.URL, r.Dir)...).Run()
+		if r.PreHook != nil {
+			if herr := r.PreHook(cmd); herr != nil {
+				return herr
+			}
+		}
+		err := cmd.Run()
+		if r.PostHook != nil {
+			if herr := r.PostHook(cmd, err); herr != nil {
+				return herr
+			}
+		}
+		return err
 	} else {
 		return fmt.Errorf("repository already cloned: %s", r.URL)
 	}
@@ -171,13 +189,35 @@ func (r *Repository) LockerPID() (int, error) {
 // Exec executes a command in the Git repository.
 func (r *Repository) Exec(args ...string) error {
 	args = append([]string{"-C", r.Dir}, args...)
-	return exec.Command("git", args...).Run()
+	cmd := exec.Command("git", args...)
+	if r.PreHook != nil {
+		if herr := r.PreHook(cmd); herr != nil {
+			return herr
+		}
+	}
+	err := cmd.Run()
+	if r.PostHook != nil {
+		if herr := r.PostHook(cmd, err); herr != nil {
+			return herr
+		}
+	}
+	return err
 }
 
 // ExecOutput executes a command in the Git repository and returns its output.
 func (r *Repository) ExecOutput(args ...string) (string, error) {
 	args = append([]string{"-C", r.Dir}, args...)
 	cmd := exec.Command("git", args...)
+	if r.PreHook != nil {
+		if herr := r.PreHook(cmd); herr != nil {
+			return "", herr
+		}
+	}
 	out, err := cmd.Output()
+	if r.PostHook != nil {
+		if herr := r.PostHook(cmd, err); herr != nil {
+			return "", herr
+		}
+	}
 	return string(out), err
 }
