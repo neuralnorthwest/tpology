@@ -14,7 +14,7 @@
 
 package main
 
-const version = "0.0.1"
+const version = "0.0.2"
 
 // Version returns the version.
 func Version() string {

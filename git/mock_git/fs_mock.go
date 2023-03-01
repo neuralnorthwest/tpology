@@ -63,6 +63,50 @@ func (mr *MockfsMockRecorder) MkdirTemp(dir, prefix interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MkdirTemp", reflect.TypeOf((*Mockfs)(nil).MkdirTemp), dir, prefix)
 }
 
+// Open mocks base method.
+func (m *Mockfs) Open(name string) (*os.File, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Open", name)
+	ret0, _ := ret[0].(*os.File)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Open indicates an expected call of Open.
+func (mr *MockfsMockRecorder) Open(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Open", reflect.TypeOf((*Mockfs)(nil).Open), name)
+}
+
+// OpenFile mocks base method.
+func (m *Mockfs) OpenFile(name string, flag int, perm os.FileMode) (*os.File, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OpenFile", name, flag, perm)
+	ret0, _ := ret[0].(*os.File)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// OpenFile indicates an expected call of OpenFile.
+func (mr *MockfsMockRecorder) OpenFile(name, flag, perm interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OpenFile", reflect.TypeOf((*Mockfs)(nil).OpenFile), name, flag, perm)
+}
+
+// Remove mocks base method.
+func (m *Mockfs) Remove(name string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Remove", name)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Remove indicates an expected call of Remove.
+func (mr *MockfsMockRecorder) Remove(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Remove", reflect.TypeOf((*Mockfs)(nil).Remove), name)
+}
+
 // RemoveAll mocks base method.
 func (m *Mockfs) RemoveAll(path string) error {
 	m.ctrl.T.Helper()
