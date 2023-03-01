@@ -1,18 +1,8 @@
 ## 0.0.3
 
-TODO
-
-### Added
-
-### Changed
-
-### Deprecated
-
-### Removed
-
 ### Fixed
 
-### Security
+* Version number was missing `v` prefix
 
 ## 0.0.2
 
