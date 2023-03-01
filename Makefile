@@ -33,7 +33,7 @@
 check: generate check-license lint test
 
 .PHONY: generate
-generate: generate-go
+generate: generate-go update-wc
 
 .PHONY: generate-go
 generate-go:
@@ -83,3 +83,7 @@ roll-version:
 docker:
 	@docker build -t tpology .
 	@docker build --build-arg DEV=1 -t tpology-dev .
+
+.PHONY: update-wc
+update-wc:
+	@./scripts/update-wc.sh

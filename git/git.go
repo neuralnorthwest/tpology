@@ -15,10 +15,13 @@
 package git
 
 import (
+	"fmt"
 	"net/url"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -85,21 +88,27 @@ func (r *Repository) IsCloned() bool {
 	return err == nil
 }
 
-// Exec executes a command in the Git repository.
-func (r *Repository) Exec(args ...string) error {
-	args = append([]string{"-C", r.Dir}, args...)
-	return exec.Command("git", args...).Run()
+// CloneIfNotCloned clones the Git repository if it is not cloned.
+func (r *Repository) CloneIfNotCloned() error {
+	if !r.IsCloned() {
+		return r.Clone()
+	}
+	return nil
 }
 
 // Clone clones the Git repository.
-func (r *Repository) Clone() error {
+func (r *Repository) Clone(args ...string) error {
 	if !r.IsCloned() {
 		if err := r.fs.MkdirAll(filepath.Dir(r.Dir), 0755); err != nil {
 			return err
 		}
-		return exec.Command("git", "clone", "--depth=1", "--branch", r.MainBranch, r.URL, r.Dir).Run()
+		if r.MainBranch == "" {
+			return exec.Command("git", append(append([]string{"clone"}, args...), r.URL, r.Dir)...).Run()
+		}
+		return exec.Command("git", append(append([]string{"clone", "-b", r.MainBranch}, args...), r.URL, r.Dir)...).Run()
+	} else {
+		return fmt.Errorf("repository already cloned: %s", r.URL)
 	}
-	return nil
 }
 
 // Remove removes the Git repository.
@@ -110,4 +119,65 @@ func (r *Repository) Remove() error {
 // Clean cleans the Git repository.
 func (r *Repository) Clean() error {
 	return r.Exec("clean", "-fdx")
+}
+
+// Checkout checks out the specified branch of the Git repository.
+func (r *Repository) Checkout(branch string) error {
+	return r.Exec("checkout", branch)
+}
+
+// IsClean returns true if the Git repository is clean.
+func (r *Repository) IsClean() bool {
+	out, err := r.ExecOutput("status", "--porcelain")
+	return err == nil && out == ""
+}
+
+// Lock locks the Git repository. It returns an unlock function and an error.
+func (r *Repository) Lock() (func(), error) {
+	// Exclusive create the lock file and write our PID to it
+	lockFile := filepath.Join(r.Dir, ".lock")
+	if f, err := r.fs.OpenFile(lockFile, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644); err == nil {
+		defer f.Close()
+		if _, err := f.WriteString(strconv.Itoa(os.Getpid())); err != nil {
+			return nil, err
+		}
+		return func() {
+			_ = r.fs.Remove(lockFile)
+		}, nil
+	} else {
+		otherPID := 0
+		if f, err := r.fs.Open(lockFile); err == nil {
+			if _, err := fmt.Fscanf(f, "%d", &otherPID); err == nil {
+				f.Close()
+			}
+		}
+		return nil, fmt.Errorf("repository already locked by PID %d: %s", otherPID, r.URL)
+	}
+}
+
+// LockerPID returns the PID of the process that locked the Git repository.
+func (r *Repository) LockerPID() (int, error) {
+	lockFile := filepath.Join(r.Dir, ".lock")
+	if f, err := r.fs.Open(lockFile); err == nil {
+		defer f.Close()
+		var pid int
+		if _, err := fmt.Fscanf(f, "%d", &pid); err == nil {
+			return pid, nil
+		}
+	}
+	return 0, fmt.Errorf("repository not locked: %s", r.URL)
+}
+
+// Exec executes a command in the Git repository.
+func (r *Repository) Exec(args ...string) error {
+	args = append([]string{"-C", r.Dir}, args...)
+	return exec.Command("git", args...).Run()
+}
+
+// ExecOutput executes a command in the Git repository and returns its output.
+func (r *Repository) ExecOutput(args ...string) (string, error) {
+	args = append([]string{"-C", r.Dir}, args...)
+	cmd := exec.Command("git", args...)
+	out, err := cmd.Output()
+	return string(out), err
 }
