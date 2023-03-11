@@ -30,8 +30,7 @@
 # docker: builds the docker image
 
 .PHONY: check
-#check: generate check-license lint test
-check:
+check: generate check-license lint test
 
 .PHONY: generate
 generate: generate-go
@@ -41,7 +40,7 @@ generate-go:
 	@go generate ./...
 
 .PHONY: setup-dev
-setup-dev: setup-git-hooks setup-gh
+setup-dev: setup-git-hooks setup-gh setup-mockgen
 
 .PHONY: setup-git-hooks
 setup-git-hooks:
@@ -50,6 +49,10 @@ setup-git-hooks:
 .PHONY: setup-gh
 setup-gh:
 	@./scripts/setup-gh.sh
+
+.PHONY: setup-mockgen
+setup-mockgen:
+	@go install github.com/golang/mock/mockgen@latest
 
 .PHONY: check-license
 check-license:

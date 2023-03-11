@@ -23,8 +23,8 @@ func Main() error {
 
 func rootCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "itool",
-		Short: "ZE Inventory Tool",
+		Use:   "tpology",
+		Short: "an inventory management tool",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cmd.Help()
 		},

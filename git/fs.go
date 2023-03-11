@@ -29,7 +29,7 @@ type fs interface {
 }
 
 // generate mocks with gomock
-//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -package mock_git -source=fs.go -destination mock_git/fs_mock.go . fs
+//go:generate mockgen -package mock_git -source=fs.go -destination mock_git/fs_mock.go . fs
 
 // osFS implements fsMock using the os package.
 type osFS struct{}

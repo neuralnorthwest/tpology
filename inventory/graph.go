@@ -12,75 +12,112 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.package inventory
 
+package inventory
+
 import (
 	"fmt"
 
 	"github.com/neuralnorthwest/tpology/resource"
 )
 
-// buildGraph builds the resource graph.
-func (inv *Inventory) buildGraph() error {
-	for _, resources := range inv.Resources {
-		for _, r := range resources {
-			inv.addNode(r)
+// Graph holds the resource graph
+type Graph struct {
+	// Nodes are the nodes in the graph.
+	Nodes map[string]map[string]*Node
+}
+
+// Node is a node in the graph.
+type Node struct {
+	// Resource is the resource.
+	*resource.Resource
+	// GraphData is the data of the resource, with outgoing edges replaced with
+	// pointers to their target nodes.
+	GraphData interface{}
+}
+
+// BuildGraph builds the graph from the inventory.
+func (inv *Inventory) BuildGraph() (*Graph, error) {
+	g := &Graph{
+		Nodes: make(map[string]map[string]*Node),
+	}
+	for _, kind := range inv.Resources {
+		for _, r := range kind {
+			g.addNode(r)
 		}
 	}
-	for _, node := range inv.Nodes {
-		for _, n := range node {
-			if err := inv.addEdges(n); err != nil {
-				return err
+	if err := g.buildGraph(); err != nil {
+		return nil, err
+	}
+	return g, nil
+}
+
+// addNode adds a node to the graph.
+func (g *Graph) addNode(r *resource.Resource) {
+	if g.Nodes[r.Kind] == nil {
+		g.Nodes[r.Kind] = make(map[string]*Node)
+	}
+	node := &Node{
+		Resource: r,
+	}
+	g.Nodes[r.Kind][r.Name] = node
+}
+
+// BuildGraph builds the graph.
+func (g *Graph) buildGraph() error {
+	for _, kind := range g.Nodes {
+		for _, node := range kind {
+			switch data := node.Data.(type) {
+			case map[string]interface{}:
+				// Copy the data and replace any outgoing edges with pointers to
+				// their target nodes.
+				graphData := make(map[string]interface{})
+				if err := g.buildGraphData(node, data, graphData); err != nil {
+					return err
+				}
+				node.GraphData = graphData
+			default:
+				// Just copy the data.
+				node.GraphData = data
 			}
 		}
 	}
 	return nil
 }
 
-// addNode adds a node to the graph.
-func (inv *Inventory) addNode(r *resource.Resource) {
-	if inv.Nodes[r.Kind] == nil {
-		inv.Nodes[r.Kind] = make(map[string]*Node)
-	}
-	inv.Nodes[r.Kind][r.Name] = NewNode(r)
-}
-
-// addEdges adds edges to the graph.
-func (inv *Inventory) addEdges(n *Node) error {
-	// find all the outgoing edges from this node. These are the references
-	// from this node to other nodes. A reference exists at any point where
-	// a key in the resource is the name of a kind in the inventory.
-	references, err := inv.references(n)
-	if err != nil {
-		return err
-	}
-}
-
-// reference is a reference within a node
-type reference struct {
-	// Kind is the kind of the reference.
-	Kind string
-	// Map is the map that contains the reference.
-	Map map[string]interface{}
-	// Key is the key of the reference.
-	Key string
-	// Value is the value of the reference.
-	Value string
-}
-
-// references returns a list of all outgoing references from a node.
-func (inv *Inventory) references(n *Node) (map[string][]string, error) {
-	references := make(map[string][]string)
-	switch data := n.Data.(type) {
-	case map[string]interface{}:
-		for k, v := range data {
-			if inv.Nodes[k] == nil {
-				continue
+// buildGraphData builds the graph data.
+func (g *Graph) buildGraphData(node *Node, data, graphData map[string]interface{}) error {
+	for key, value := range data {
+		switch v := value.(type) {
+		case map[string]interface{}:
+			// Copy the data and replace any outgoing edges with pointers to
+			// their target nodes.
+			graphData[key] = make(map[string]interface{})
+			if err := g.buildGraphData(node, v, graphData[key].(map[string]interface{})); err != nil {
+				return err
 			}
-			switch v := v.(type) {
-			case string:
-				references[k] = append(references[k], v)
-			case []string:
-				references[k] = append(references[k], v...)
-			default:
-				return nil, fmt.Errorf("invalid reference type %T", v)
+		case string:
+			// If the value is an edge, replace it with a pointer to the target
+			// node.
+			if r, ok := g.findNode(key, v); ok {
+				graphData[key] = g.Nodes[r.Kind][r.Name]
+			} else {
+				return fmt.Errorf("in Resource %s/%s, a reference to %s/%s appeared, but that Resource does not exist", node.Kind, node.Name, key, v)
 			}
+		default:
+			// Just copy the data.
+			graphData[key] = v
 		}
+	}
+	return nil
+}
+
+// findNode finds a node in the graph.
+func (g *Graph) findNode(kind, name string) (*Node, bool) {
+	if g.Nodes[kind] == nil {
+		return nil, false
+	}
+	if g.Nodes[kind][name] == nil {
+		return nil, false
+	}
+	return g.Nodes[kind][name], true
+}
