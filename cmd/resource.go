@@ -21,26 +21,16 @@ import (
 // ResourceConfig is the resource configuration.
 type ResourceConfig struct {
 	// List is the resource list configuration.
-	List ResourceListConfig
+	List  ResourceListConfig
+	Graph ResourceGraphConfig
 }
 
 // SetupFlags sets up the flags for the resource command.
 func (c *ResourceConfig) SetupFlags(cmd *cobra.Command) {
 }
 
-// ResourceListConfig is the resource list configuration.
-type ResourceListConfig struct {
-	// Format is the output format.
-	Format string
-}
-
-// SetupFlags sets up the flags for the resource list command.
-func (c *ResourceListConfig) SetupFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&c.Format, "format", "f", "table", "output format")
-}
-
 // resourceCommand returns the resource command.
-func resourceCommand() *cobra.Command {
+func resourceCommand(config *Config) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "resource",
 		Aliases: []string{"res", "resources"},
@@ -52,45 +42,7 @@ func resourceCommand() *cobra.Command {
 		SilenceErrors: true,
 	}
 	config.Resource.SetupFlags(cmd)
-	cmd.AddCommand(resourceListCommand())
+	cmd.AddCommand(resourceListCommand(config))
+	cmd.AddCommand(resourceGraphCommand(config))
 	return cmd
-}
-
-// resourceListCommand returns the resource list command.
-func resourceListCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "list [resource]",
-		Aliases: []string{"ls"},
-		Short:   "List resources",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return resourceList(args)
-		},
-		Args:          cobra.MaximumNArgs(1),
-		SilenceUsage:  true,
-		SilenceErrors: true,
-	}
-	config.Resource.List.SetupFlags(cmd)
-	return cmd
-}
-
-// resourceList lists resources.
-func resourceList(args []string) error {
-	inv, err := loadInventory()
-	if err != nil {
-		return err
-	}
-	ents := []interface{}{}
-	if len(args) == 0 {
-		for kind := range inv.Resources {
-			ents = append(ents, kind)
-		}
-	} else {
-		kind := args[0]
-		if resources, ok := inv.Resources[kind]; ok {
-			for _, r := range resources {
-				ents = append(ents, r)
-			}
-		}
-	}
-	return printEntities(ents, Format(config.Resource.List.Format))
 }

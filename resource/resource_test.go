@@ -30,6 +30,14 @@ func Test_New(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+// Test_QualifiedName tests the QualifiedName function.
+func Test_QualifiedName(t *testing.T) {
+	t.Parallel()
+	r, err := New("kind", "name", "description", "owner")
+	assert.NoError(t, err)
+	assert.Equal(t, "kind/name", r.QualifiedName())
+}
+
 // Test_New_InvalidKind tests the New function with an invalid kind.
 func Test_New_InvalidKind(t *testing.T) {
 	reserved := []string{

@@ -20,7 +20,7 @@ import (
 )
 
 // loadInventory loads the inventory.
-func loadInventory() (*inventory.Inventory, error) {
+func loadInventory(config *Config) (*inventory.Inventory, error) {
 	invPath := config.Global.InventoryLocal
 	if invPath == "" {
 		cache := git.NewCache(config.Global.GitCacheDir)

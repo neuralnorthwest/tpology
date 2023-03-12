@@ -23,10 +23,14 @@ type Inventory struct {
 }
 
 // New returns a new inventory.
-func New() *Inventory {
-	return &Inventory{
+func New(resources ...*resource.Resource) *Inventory {
+	inv := &Inventory{
 		Resources: make(map[string]map[string]*resource.Resource),
 	}
+	for _, r := range resources {
+		inv.AddResource(r)
+	}
+	return inv
 }
 
 // AddResource adds a resource to the inventory.

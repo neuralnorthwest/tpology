@@ -1,0 +1,67 @@
+// Copyright 2023 Scott M. Long
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package cmd
+
+import "github.com/spf13/cobra"
+
+// ResourceListConfig is the resource list configuration.
+type ResourceListConfig struct {
+	// Format is the output format.
+	Format string
+}
+
+// SetupFlags sets up the flags for the resource list command.
+func (c *ResourceListConfig) SetupFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&c.Format, "format", "f", "table", "output format")
+}
+
+// resourceListCommand returns the resource list command.
+func resourceListCommand(config *Config) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "list [resource]",
+		Aliases: []string{"ls"},
+		Short:   "List resources",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return resourceList(config, args)
+		},
+		Args:          cobra.MaximumNArgs(1),
+		SilenceUsage:  true,
+		SilenceErrors: true,
+	}
+	config.Resource.List.SetupFlags(cmd)
+	return cmd
+}
+
+// resourceList lists resources.
+func resourceList(config *Config, args []string) error {
+	inv, err := loadInventory(config)
+	if err != nil {
+		return err
+	}
+	ents := []interface{}{}
+	if len(args) == 0 {
+		for kind := range inv.Resources {
+			ents = append(ents, kind)
+		}
+	} else {
+		kind := args[0]
+		if resources, ok := inv.Resources[kind]; ok {
+			for _, r := range resources {
+				ents = append(ents, r)
+			}
+		}
+	}
+	return printEntities(ents, Format(config.Resource.List.Format))
+}

@@ -43,9 +43,6 @@ type Config struct {
 	Resource ResourceConfig
 }
 
-// config is the global configuration.
-var config = &Config{}
-
 // SetupFlags sets up the flags for the itool command.
 func (c *GlobalConfig) SetupFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().BoolVarP(&c.Quiet, "quiet", "q", false, "suppress all output")

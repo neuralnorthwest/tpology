@@ -66,58 +66,64 @@ func (g *Graph) addNode(r *resource.Resource) {
 func (g *Graph) buildGraph() error {
 	for _, kind := range g.Nodes {
 		for _, node := range kind {
-			switch data := node.Data.(type) {
-			case map[string]interface{}:
-				// Copy the data and replace any outgoing edges with pointers to
-				// their target nodes.
-				graphData := make(map[string]interface{})
-				if err := g.buildGraphData(node, data, graphData); err != nil {
-					return err
-				}
-				node.GraphData = graphData
-			default:
-				// Just copy the data.
-				node.GraphData = data
+			graphData, err := g.buildGraphData(node.Data)
+			if err != nil {
+				return fmt.Errorf("%s: error building graph data for %s/%s: %w", node.Filename(), node.Kind, node.Name, err)
 			}
+			node.GraphData = graphData
 		}
 	}
 	return nil
 }
 
-// buildGraphData builds the graph data.
-func (g *Graph) buildGraphData(node *Node, data, graphData map[string]interface{}) error {
-	for key, value := range data {
-		switch v := value.(type) {
-		case map[string]interface{}:
-			// Copy the data and replace any outgoing edges with pointers to
-			// their target nodes.
-			graphData[key] = make(map[string]interface{})
-			if err := g.buildGraphData(node, v, graphData[key].(map[string]interface{})); err != nil {
-				return err
-			}
+// buildGraphData builds the graph data by processing the incoming data
+// structure and replacing any references to other resources with pointers to
+// the target nodes.
+func (g *Graph) buildGraphData(data interface{}) (interface{}, error) {
+	switch v := data.(type) {
+	case map[string]interface{}:
+		return g.buildGraphDataMap(v)
+	case []interface{}:
+		return g.buildGraphDataList(v)
+	default:
+		return v, nil
+	}
+}
+
+// buildGraphDataMap builds the graph data map.
+func (g *Graph) buildGraphDataMap(data map[string]interface{}) (map[string]interface{}, error) {
+	graphData := make(map[string]interface{})
+	for k, v := range data {
+		switch v := v.(type) {
 		case string:
-			// If the value is an edge, replace it with a pointer to the target
-			// node.
-			if r, ok := g.findNode(key, v); ok {
-				graphData[key] = g.Nodes[r.Kind][r.Name]
-			} else {
-				return fmt.Errorf("in Resource %s/%s, a reference to %s/%s appeared, but that Resource does not exist", node.Kind, node.Name, key, v)
+			if g.Nodes[k] != nil {
+				if node, ok := g.Nodes[k][v]; ok {
+					graphData[k] = node
+					continue
+				}
+				return nil, fmt.Errorf("resource not found: %s/%s", k, v)
 			}
+			graphData[k] = v
 		default:
-			// Just copy the data.
-			graphData[key] = v
+			newData, err := g.buildGraphData(v)
+			if err != nil {
+				return nil, err
+			}
+			graphData[k] = newData
 		}
 	}
-	return nil
+	return graphData, nil
 }
 
-// findNode finds a node in the graph.
-func (g *Graph) findNode(kind, name string) (*Node, bool) {
-	if g.Nodes[kind] == nil {
-		return nil, false
+// buildGraphDataList builds the graph data list.
+func (g *Graph) buildGraphDataList(data []interface{}) ([]interface{}, error) {
+	graphData := make([]interface{}, len(data))
+	for i, v := range data {
+		newData, err := g.buildGraphData(v)
+		if err != nil {
+			return nil, err
+		}
+		graphData[i] = newData
 	}
-	if g.Nodes[kind][name] == nil {
-		return nil, false
-	}
-	return g.Nodes[kind][name], true
+	return graphData, nil
 }

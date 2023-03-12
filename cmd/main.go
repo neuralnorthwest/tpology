@@ -22,6 +22,7 @@ func Main() error {
 }
 
 func rootCommand() *cobra.Command {
+	config := &Config{}
 	cmd := &cobra.Command{
 		Use:   "tpology",
 		Short: "an inventory management tool",
@@ -31,7 +32,7 @@ func rootCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
-	cmd.AddCommand(resourceCommand())
+	cmd.AddCommand(resourceCommand(config))
 	config.Global.SetupFlags(cmd)
 	return cmd
 }

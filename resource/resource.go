@@ -59,6 +59,11 @@ func New(kind, name, description, owner string) (*Resource, error) {
 	}, nil
 }
 
+// QualifiedName returns the qualified name of the resource.
+func (r *Resource) QualifiedName() string {
+	return fmt.Sprintf("%s/%s", r.Kind, r.Name)
+}
+
 // MarshalYAML implements the yaml.Marshaler interface.
 func (r *Resource) MarshalYAML() (interface{}, error) {
 	return map[string]interface{}{
@@ -141,4 +146,9 @@ func getField(data map[string]interface{}, field string) string {
 		return ""
 	}
 	return value.(string)
+}
+
+// Filename returns the filename of the resource.
+func (r *Resource) Filename() string {
+	return r.loadedFrom
 }
